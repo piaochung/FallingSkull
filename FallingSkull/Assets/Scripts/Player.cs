@@ -1,14 +1,17 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Android;
 
 public class Player : MonoBehaviour
 {
     public TextMesh itemText;
     public GameManager gameManager;
+
     public float moveSpeed;
 
     float movement;
+    float width;
 
     Animator anim;
     SpriteRenderer sprite;
@@ -16,9 +19,11 @@ public class Player : MonoBehaviour
 
     void Start()
     {
+        width = (float)Screen.width / 2;
         anim = GetComponent<Animator>();
         sprite = GetComponent<SpriteRenderer>();
         playerPos = GetComponent<Player>().transform.position;
+        Invoke("TimeReward", 8f);
     }
 
     void Update()
@@ -33,14 +38,30 @@ public class Player : MonoBehaviour
 
     void OnMove()
     {
-        movement = Input.GetAxisRaw("Horizontal");
+        if (Application.platform == RuntimePlatform.Android)
+        { 
+            if ((Input.GetTouch(0).phase == TouchPhase.Stationary) || (Input.GetTouch(0).phase == TouchPhase.Began))
+            {
+                Touch touch = Input.GetTouch(0);
 
-        if (Input.GetButton("Horizontal"))
-        {
-            sprite.flipX = (Input.GetAxisRaw("Horizontal") == -1);
+                if (touch.position.x <= width)
+                {
+                    movement = -1;
+                }
+                else if (touch.position.x > width)
+                {
+                    movement = 1;
+                }
+            }
+  
+            sprite.flipX = (movement == -1);
+
+            if (Input.GetTouch(0).phase == TouchPhase.Ended)
+            {
+                movement = 0;
+            }
+            anim.SetInteger("movement", (int)movement);
         }
-
-        anim.SetInteger("movement", (int)movement);
     }
 
     void OnTriggerEnter2D(Collider2D collision)
@@ -62,17 +83,29 @@ public class Player : MonoBehaviour
                 if (gameManager.health < 3)
                 {
                     itemText.text = "HealthUp";
-                    gameManager.DrawPlayerHealth(++gameManager.health);
+                    gameManager.health++;
+                    gameManager.DrawPlayerHealth(gameManager.health);
                 }
-                itemText.text = "point +70";
-                gameManager.totalPoint += 70;
+                else
+                {
+                    itemText.text = "point +70";
+                    gameManager.totalPoint += 70;
+                }
             }
             else if (isInvincibilityPill)
             {
-                itemText.text = "Immortar";
-                sprite.color = new Color(0.4f, 0.4f, 0.4f, 0.4f);
-                gameObject.layer = 8;
-                Invoke("CanDamaged", 1.5f);
+                if(gameObject.layer == 9)
+                {
+                    itemText.text = "Immortal";
+                    sprite.color = new Color(0.4f, 0.4f, 0.4f, 0.4f);
+                    gameObject.layer = 8;
+                    Invoke("CanDamaged", 1.5f);
+                }
+                else
+                {
+                    itemText.text = "point +70";
+                    gameManager.totalPoint += 70;
+                }
             }
             else if (isBronze)
             {
@@ -89,14 +122,8 @@ public class Player : MonoBehaviour
                 itemText.text = "point +150";
                 gameManager.totalPoint += 150;
             }
-            itemText.gameObject.SetActive(true);
             collision.gameObject.SetActive(false);
         }
-    }
-
-    void DeAcitveTextMesh()
-    {
-        itemText.gameObject.SetActive(false);
     }
 
     void OnHit()
@@ -105,8 +132,9 @@ public class Player : MonoBehaviour
         gameObject.layer = 8;
         gameObject.SetActive(false);
 
-        if (gameManager.health >= 0)
-        {
+        if (gameManager.health > 0)
+        { 
+            movement = 0;
             Invoke("OnRespawn", 1f);
         }
     }
@@ -124,5 +152,12 @@ public class Player : MonoBehaviour
     {
         gameObject.layer = 9;
         sprite.color = new Color(1, 1, 1, 1);
+    }
+
+    void TimeReward()
+    {
+        gameManager.totalPoint += 100;
+        itemText.text = "Time Reward";
+        Invoke("TimeReward", 8f);
     }
 }

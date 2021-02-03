@@ -4,30 +4,20 @@ using UnityEngine;
 
 public class Item : MonoBehaviour
 {
-    public float moveSpeed;
-    public float rotateSpeed;
-
-    Vector2 targetPos;
-
-    Rigidbody2D rigid;
-    Transform target;
+    float rotateSpeed;
 
     void Start()
     {
-        rigid = GetComponent<Rigidbody2D>();
-        target = FindObjectOfType<Ground>().transform;
-
-        targetPos = target.position - transform.position;
+        rotateSpeed = Random.Range(0, 180);
     }
 
     void Update()
     {
-        Move();
+        Rotate();
     }
 
-    void Move()
+    void Rotate()
     {
         transform.Rotate(Vector3.forward, Time.deltaTime * rotateSpeed);
-        rigid.velocity = targetPos.normalized * moveSpeed;
     }
 }
